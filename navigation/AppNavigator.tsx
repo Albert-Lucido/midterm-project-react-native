@@ -16,9 +16,9 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 const AppNavigator = () => {
   return (
     <Stack.Navigator initialRouteName="JobFinderScreen">
-      <Stack.Screen name="JobFinderScreen" component={JobFinderScreen} />
-      <Stack.Screen name="SavedJobsScreen" component={SavedJobsScreen} />
-      <Stack.Screen name="ApplicationForm" component={ApplicationForm} />
+      <Stack.Screen name="JobFinderScreen" component={JobFinderScreen} options={{ title: "JobSeek" }} />
+      <Stack.Screen name="SavedJobsScreen" component={SavedJobsScreen} options={{ title: "Saved Jobs" }} />
+      <Stack.Screen name="ApplicationForm" component={ApplicationForm} options={{ title: "Apply Now!" }} />
     </Stack.Navigator>
   );
 };

@@ -1,62 +1,30 @@
-import React, { useEffect, useState } from "react";
-import { View, FlatList, TextInput, Button, Text, ActivityIndicator } from "react-native";
-import axios from "axios";
+import React from "react";
+import { View, FlatList, TextInput, Text, ActivityIndicator, TouchableOpacity } from "react-native";
 import { styles } from "../styles/styling";
 import JobItem from "../components/JobItem";
+import { useNavigation } from "@react-navigation/native";
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { RootStackParamList } from "../navigation/AppNavigator";
+import { useJobs } from "../context/JobContext";
+import { Job } from '../types/JobTypes';
 
-interface Job {
-  id: string;
-  title: string;
-  companyName: string;
-  minSalary?: number;
-  maxSalary?: number;
-  locations: string[];
-  companyLogo: string;
-}
 
 const JobFinderScreen = () => {
-  const [jobs, setJobs] = useState<Job[]>([]);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [savedJobs, setSavedJobs] = useState<Job[]>([]);
-  const [loading, setLoading] = useState(true);
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const {
+    jobs,
+    savedJobs,
+    fetchJobs,
+    saveJob,
+    removeJob,
+    searchQuery,
+    setSearchQuery,
+    filteredJobs,
+  } = useJobs();
 
-  useEffect(() => {
-    fetchJobs();
-  }, []);
-
-  const fetchJobs = async () => {
-    try {
-      const response = await axios.get("https://empllo.com/api/v1");
-      const fetchedJobs = response.data.jobs.map((job: any, index: number) => ({
-        id: `${job.title}-${index}`,
-        title: job.title,
-        companyName: job.companyName,
-        minSalary: job.minSalary,
-        maxSalary: job.maxSalary,
-        locations: job.locations,
-        companyLogo: job.companyLogo,
-      }));
-      setJobs(fetchedJobs);
-    } catch (error) {
-      console.error("Error fetching jobs:", error);
-    } finally {
-      setLoading(false);
-    }
+  const applyJob = (job: Job) => () => {
+    navigation.navigate('ApplicationForm', { job });
   };
-
-  const saveJob = (job: Job) => {
-    if (!savedJobs.some(saved => saved.id === job.id)) {
-      setSavedJobs([...savedJobs, job]);
-    }
-  };
-
-  const applyJob = (job: Job) => {
-    alert(`Applied to ${job.title} at ${job.companyName}`);
-  };
-
-  const filteredJobs = jobs.filter(job =>
-    job.title.toLowerCase().includes(searchQuery.toLowerCase())
-  );
 
   return (
     <View style={styles.container}>
@@ -66,17 +34,28 @@ const JobFinderScreen = () => {
         value={searchQuery}
         onChangeText={setSearchQuery}
       />
-      {loading ? (
-        <ActivityIndicator size="large" color="#6200EE" />
+      {jobs.length === 0 ? (
+        <ActivityIndicator size="large" color="#0000ff" />
       ) : (
         <FlatList
           data={filteredJobs}
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => (
-            <JobItem job={item} saveJob={saveJob} applyJob={applyJob} />
-          )}
+          <JobItem
+              job={item}
+              saveJob={saveJob}
+              applyJob={applyJob(item)}
+              saved={savedJobs.some((savedJob) => savedJob.id === item.id)}
+            />          )}
+              showsVerticalScrollIndicator={false}
+
+            
         />
       )}
+      
+      <TouchableOpacity style={styles.savedJobsButton} onPress={() => navigation.navigate('SavedJobsScreen')}>
+        <Text style={styles.savedJobsText}>Saved Jobs</Text>
+      </TouchableOpacity>
     </View>
   );
 };

@@ -1,24 +1,17 @@
 import React from "react";
 import { View, Text, Image, Button } from "react-native";
 import { styles } from "../styles/styling";
-
-interface Job {
-  id: string;
-  title: string;
-  companyName: string;
-  minSalary?: number;
-  maxSalary?: number;
-  locations: string[];
-  companyLogo: string;
-}
+import { Job } from "../types/JobTypes";
 
 interface JobItemProps {
   job: Job;
   saveJob: (job: Job) => void;
   applyJob: (job: Job) => void;
+  saved: boolean; // Add this line
+
 }
 
-const JobItem: React.FC<JobItemProps> = ({ job, saveJob, applyJob }) => {
+const JobItem: React.FC<JobItemProps> = ({ job, saveJob, applyJob, saved }) => {
   return (
     <View style={styles.jobItem}>
       {job.companyLogo ? (
@@ -32,7 +25,12 @@ const JobItem: React.FC<JobItemProps> = ({ job, saveJob, applyJob }) => {
           : "Salary not disclosed"}
       </Text>
       <Text style={styles.location}>{job.locations.join(", ")}</Text>
-      <Button title="Save" onPress={() => saveJob(job)} />
+      <Button
+        title={saved ? "Saved" : "Save"}
+        onPress={saved ? undefined : () => saveJob(job)}
+        disabled={saved} // add this line
+
+      />
       <Button title="Apply" onPress={() => applyJob(job)} />
     </View>
   );

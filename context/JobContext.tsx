@@ -1,23 +1,31 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import React, { createContext, useContext, useState, useEffect } from "react";
 import axios from "axios";
-import uuid from "react-native-uuid";
-import { Job } from "../types/JobTypes"; // ✅ Use the global Job type
+import { Job } from "../types/JobTypes";
+import uuid from 'react-native-uuid';
 
-// Define context type
+
 interface JobContextType {
   jobs: Job[];
   savedJobs: Job[];
   fetchJobs: () => void;
   saveJob: (job: Job) => void;
   removeJob: (id: string) => void;
+  searchQuery: string;
+  setSearchQuery: (searchQuery: string) => void;
+  filteredJobs: Job[];
 }
 
-// Create context
+interface JobProviderProps {
+  children: React.ReactNode;
+}
+
 const JobContext = createContext<JobContextType | undefined>(undefined);
 
-export const JobProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+const JobProvider: React.FC<JobProviderProps> = ({ children }) => {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [savedJobs, setSavedJobs] = useState<Job[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchJobs();
@@ -26,23 +34,21 @@ export const JobProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const fetchJobs = async () => {
     try {
       const response = await axios.get("https://empllo.com/api/v1");
-
-      if (!response.data || !Array.isArray(response.data)) {
-        throw new Error("Invalid API response format");
-      }
-
-      const jobsWithId: Job[] = response.data.map((job: any) => ({
-        id: String(uuid.v4()),
-        title: job.title || "Unknown Title",
-        company: job.company || "Unknown Company",
-        salary: job.salary ? String(job.salary) : "Not Provided", // ✅ Ensure salary is always a string
-        location: job.location || "Unknown Location",
-        description: job.description || "No description available",
+      const fetchedJobs = response.data.jobs.map((job: any, index: number) => ({
+        id: uuid.v4(),
+        title: job.title,
+        companyName: job.companyName,
+        minSalary: job.minSalary,
+        maxSalary: job.maxSalary,
+        locations: job.locations,
+        companyLogo: job.companyLogo,
+        description: job.description,
       }));
-
-      setJobs(jobsWithId);
+      setJobs(fetchedJobs);
     } catch (error) {
       console.error("Error fetching jobs:", error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -56,17 +62,34 @@ export const JobProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setSavedJobs(savedJobs.filter((job) => job.id !== id));
   };
 
+  const filteredJobs = jobs.filter((job) =>
+    job.title.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   return (
-    <JobContext.Provider value={{ jobs, savedJobs, fetchJobs, saveJob, removeJob }}>
+    <JobContext.Provider
+      value={{
+        jobs,
+        savedJobs,
+        fetchJobs,
+        saveJob,
+        removeJob,
+        searchQuery,
+        setSearchQuery,
+        filteredJobs,
+      }}
+    >
       {children}
     </JobContext.Provider>
   );
 };
 
-export const useJobs = (): JobContextType => {
+const useJobs = () => {
   const context = useContext(JobContext);
   if (!context) {
     throw new Error("useJobs must be used within a JobProvider");
   }
   return context;
 };
+
+export { JobProvider, useJobs };
